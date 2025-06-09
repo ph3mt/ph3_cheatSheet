@@ -277,6 +277,11 @@ sudo ntpdate DC.blablabla.it
 #Crackmapexec
 crackmapexec smb 10.10.10.248 -u users.txt -p NewIntelligenceCorpUser9876
 
+
+#NXC
+nxc mssql 10.10.11.51 -u sa -p 'MSSQLP@ssw0rd!' --local-auth
+
+
 #Enumera user
 net user
 
