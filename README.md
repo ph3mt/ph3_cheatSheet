@@ -13,7 +13,11 @@ hostname -I                          # IP macchina locale
 netstat -tunlp                       # Porte aperte e servizi (legacy)
 ss -tuln                             # Porte aperte (moderno)
 arp -a                               # ARP table
-route -n                             # Routing
+route -n   
+
+#PingSca
+fping -ag 10.21.18.0/24 2>/dev/null
+
 
 nmap -sC -sV -oA scan 10.10.10.10     # Scansione completa
 nmap -p- -T4 --min-rate 1000 10.10.10.10   # Full port scan veloce
@@ -511,6 +515,11 @@ python3 eaphammer -i wlan0 --channel 36 --auth wpa-eap --essid Mooney_Mobile --c
 
 #deauth uno specifico client 
 aireplay-ng --deauth 0 -a 04:5F:B9:1D:8E:CD -c 3C:6A:A7:67:24:97 --ignore-negative-one
+
+
+
+
+
 ```
 
 
