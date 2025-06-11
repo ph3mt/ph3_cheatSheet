@@ -45,6 +45,11 @@ mysql -h IP -u
 show databases;
 use DBNAME;
 
+#PostGres
+psql -h <hostname> -p <port> -U <username> -d <database>
+
+
+
 
 #NFS Mount
 showmount -e 10.10.10.180
