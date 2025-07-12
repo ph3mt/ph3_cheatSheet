@@ -421,6 +421,7 @@ kerberos::tgt
 #Rimuove tutti i ticket Kerberos dalla memoria
 kerberos::purge
 
+
 ```
 
 
