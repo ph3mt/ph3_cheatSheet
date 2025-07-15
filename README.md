@@ -497,7 +497,7 @@ mklink /d c:\shadowcopy \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1\
 ```
 ---
 
-## 🧪 Privilege Escalation Linux
+## Wifi Attack
 
 
 ```bash
