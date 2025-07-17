@@ -292,6 +292,11 @@ sc start VulnService
 
 
 
+#path Interception
+#dal c2 per visualizzare il PATH environment
+env
+
+
 
 #Unquoted Service Path
 #cercare servizio con wmi
@@ -380,7 +385,6 @@ sc start VulnService3
 
 #con cobalt, mi connetto
 connect localhost 4444
-
 
 
 
