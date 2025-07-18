@@ -164,6 +164,8 @@ New-ItemProperty -Path "HKCU:...\InprocServer32" -Name "ThreadingModel" -Value "
 
 ```
 ## Post-Exploitation
+#ServicePath (sc_qc)
+#ServiceRegistry (powerpick)
 
 ```bash
 #comandi utili Cobalt tutti lanciabili dal beacon
@@ -333,9 +335,11 @@ beacon> execute-assembly C:\Tools\SharpUp\SharpUp\bin\Release\SharpUp.exe audit 
 
     Service 'VulnService2' (State: Running, StartMode: Auto)
 
+#listre tutti i servizi
+sc query type= service state= all
 
 #Per verificare con cmd
-sc qc VulnService2
+sc_qc VulnService2
 #output
 BINARY_PATH_NAME   : "C:\Program Files\Vulnerable Services\Service 2.exe"
 SERVICE_START_NAME : LocalSystem 
