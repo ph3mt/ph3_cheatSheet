@@ -829,3 +829,25 @@ ps
 inject 5248 x64 http
 
 ```
+
+
+
+
+
+## Discovery
+
+```bash
+
+#ricerca LDAP
+ldapsearch (|(objectClass=domain)(objectClass=organizationalUnit)(objectClass=groupPolicyContainer)) *,ntsecuritydescriptor
+ldapsearch (|(samAccountType=805306368)(samAccountType=805306369)(samAccountType=268435456)) --attributes *,ntsecuritydescriptor
+
+
+
+#query Bloodhound
+Match (n:GPO) return n
+
+#Caricando i file su bloodhoun fa
+
+```
+
