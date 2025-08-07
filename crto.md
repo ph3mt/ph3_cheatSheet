@@ -847,7 +847,7 @@ ldapsearch (|(samAccountType=805306368)(samAccountType=805306369)(samAccountType
 #query Bloodhound
 Match (n:GPO) return n
 
-#Caricando i file su bloodhoun fa
+#Caricando i file su bloodhoun faasdad
 
 ```
 
