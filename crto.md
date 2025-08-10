@@ -1007,6 +1007,10 @@ powerpick Get-DomainTrust
 ## Pivoting
 
 ```bash
+#ADD dns
+Add-Content -Path C:\Windows\System32\drivers\etc\hosts -Value '10.10.120.20 lon-db-1'
+
+
 #Avvio socksProxy
 beacon> socks 1080
 
