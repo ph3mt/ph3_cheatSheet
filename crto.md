@@ -1030,7 +1030,7 @@ Get-ADUser -Filter 'ServicePrincipalName -like "*"' -Server lon-dc-1
 ```
 
 
-## Pivoting
+## Kerberos
 
 ```bash
 #Ricerca Uncostrain Delegation
